@@ -81,6 +81,8 @@ class SimpleModel(nn.Module):
         super(SimpleModel, self).__init__()
         self.fc1 = nn.Linear(input_dim, hidden_dim)
         self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
@@ -95,7 +97,7 @@ criterion = nn.CrossEntropyLoss()
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-for epoch in range(20):  # 10 epochs
+for epoch in range(25):  # 10 epochs
     model.train()
     for X_batch, y_batch in train_loader:
         optimizer.zero_grad()
@@ -110,7 +112,7 @@ MAX_LEN = 640       # same as before
 FEATURES = 639      # model input size
 
 # Load your 1-row CSV (no label column)
-row = pd.read_csv("./data/test_one.csv", header=None).values.flatten()
+row = pd.read_csv("./data/test_four.csv", header=None).values.flatten()
 
 # Convert to numeric
 row = pd.to_numeric(row, errors='coerce')

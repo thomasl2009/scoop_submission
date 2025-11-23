@@ -9,7 +9,8 @@ import pandas as pd
 # ======================================
 API_BASE_URL = "https://api.marketdata.app/v1"
 API_KEY = "YWZ4ZWJVLWNrYlQyZGpYUnpLYUtXZjlhY3ptei1zcjNsbk5fMDg5NXdwZz0"
-TICKERS = ["NVDA"]
+TICKERS = ["NVVE", "W", "SHOP", "LLY"]
+#23, 110, 210, 208
 
 
 FROM_DATE = "2024-11-30"

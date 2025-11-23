@@ -6,7 +6,7 @@ from typing import Any
 from model.pytorch_model import SimpleModel
 import torch.nn.functional as F
 import joblib
-
+import os
 
 class CandlePredictionTool(BaseTool):
     name: str = "candle_predictor"
@@ -22,49 +22,55 @@ class CandlePredictionTool(BaseTool):
 
     def __init__(self):
         super().__init__()
-        self.model: Any = None  # Will be initialized lazily
-        if self.model is None:
-            self.model = SimpleModel()
-            self.model.load_state_dict(torch.load("path_to_trained_model.pt"))
-            self.model.eval()
+        # Load model
+        model_path = os.path.join(os.getcwd(), "path_to_trained_model.pt")
+        self.model: Any = SimpleModel()
+        self.model.load_state_dict(torch.load(model_path, map_location="cpu"))
+        self.model.eval()
+        # Load scaler
+        scaler_path = os.path.join(os.getcwd(), "path_to_scaler.pkl")
+        self.scaler = joblib.load(scaler_path)
 
     async def execute(self, candle_csv_path: str) -> dict:
-        MAX_LEN = 640       # same as before
-        FEATURES = 639      # model input size
-        
-        # Load your 1-row CSV (no label column)
-        row = pd.read_csv(f"{candle_csv_path}", header=None).values.flatten()
-        
-        # Convert to numeric
+        print("✅ execute() started")  # Step 0
+
+        FEATURES = 639
+
+        # Load CSV row
+        row = pd.read_csv(candle_csv_path, header=None).values.flatten()
+        print(f"CSV loaded, shape: {row.shape}")  # Step 1
+
         row = pd.to_numeric(row, errors='coerce')
-        
-        # Remove NaNs
         row = row[~np.isnan(row)]
-        
-        # Convert to float32
-        row = row.astype(np.float32)
-        row = np.nan_to_num(row, nan=0.0, posinf=0.0, neginf=0.0)
-        
-        # Pad to 639 features + 1 label position (but label is missing)
-        # Training format = [label | 639 features]
-        # Here we only have the 639 features, so if row is shorter → pad to 639
+        row = np.nan_to_num(row.astype(np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+        print(f"Row after cleaning, length: {len(row)}")  # Step 2
+
         if len(row) < FEATURES:
             row = np.pad(row, (0, FEATURES - len(row)), constant_values=0)
-        scaler = joblib.load("path_to_scaler.pkl")
-        row = scaler.transform([row])  # keep 2D shape
+        print(f"Row after padding, length: {len(row)}")  # Step 3
+
+        # Scale
+        row = self.scaler.transform([row])
+        print(f"Row after scaling: {row}")  # Step 4
+
         tensor_row = torch.tensor(row, dtype=torch.float32)
+        print(f"Tensor shape: {tensor_row.shape}")  # Step 5
+
+        # Predict
         self.model.eval()
         with torch.no_grad():
-            output = self.model(tensor_row)           # shape: [1, 2] for 2 classes
+            output = self.model(tensor_row)
+            print(f"Model raw output: {output}")  # Step 6
             probs = F.softmax(output, dim=1)
-        
-        percent_class_0 = probs[0][0].item() * 100
-        percent_class_1 = probs[0][1].item() * 100
-        
-        print(f"Class 0 chance: {percent_class_0:.2f}%")
-        print(f"Class 1 chance: {percent_class_1:.2f}%")
-            
+            print(f"Model probabilities: {probs}")  # Step 7
+
+        pred = int(probs.argmax(dim=1).item())
+        prob = float(probs[0][pred].item() * 100)
+        print(f"Prediction: {pred}, Probability: {prob}")  # Step 8
+
         return {
-            "probability": percent_class_0,
+            "prediction": pred,
+            "probability": prob,
             "source": candle_csv_path
         }
+
