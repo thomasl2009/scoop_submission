@@ -1,9 +1,12 @@
 import torch
 import pandas as pd
+import numpy as np
 from spoon_ai.tools.base import BaseTool
 from typing import Any
-from model.pytorch_model import CandlePatternPredictor
-from model.feature_builder import compute_features
+from model.pytorch_model import SimpleModel
+import torch.nn.functional as F
+import joblib
+
 
 class CandlePredictionTool(BaseTool):
     name: str = "candle_predictor"
@@ -20,6 +23,10 @@ class CandlePredictionTool(BaseTool):
     def __init__(self):
         super().__init__()
         self.model: Any = None  # Will be initialized lazily
+        if self.model is None:
+            self.model = SimpleModel()
+            self.model.load_state_dict(torch.load("path_to_trained_model.pt"))
+            self.model.eval()
 
     async def execute(self, candle_csv_path: str) -> dict:
         MAX_LEN = 640       # same as before
@@ -43,12 +50,12 @@ class CandlePredictionTool(BaseTool):
         # Here we only have the 639 features, so if row is shorter → pad to 639
         if len(row) < FEATURES:
             row = np.pad(row, (0, FEATURES - len(row)), constant_values=0)
-        
+        scaler = joblib.load("path_to_scaler.pkl")
         row = scaler.transform([row])  # keep 2D shape
         tensor_row = torch.tensor(row, dtype=torch.float32)
-        model.eval()
+        self.model.eval()
         with torch.no_grad():
-            output = model(tensor_row)           # shape: [1, 2] for 2 classes
+            output = self.model(tensor_row)           # shape: [1, 2] for 2 classes
             probs = F.softmax(output, dim=1)
         
         percent_class_0 = probs[0][0].item() * 100
@@ -58,6 +65,6 @@ class CandlePredictionTool(BaseTool):
         print(f"Class 1 chance: {percent_class_1:.2f}%")
             
         return {
-            "probability": prob,
-            "prediction": pred,
+            "probability": percent_class_0,
             "source": candle_csv_path
+        }
