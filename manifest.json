@@ -1,0 +1,28 @@
+{
+  "name": "stock_predictor_app",
+  "tools": [
+    {
+      "name": "get_candle_data",
+      "description": "Fetch candle data from Market Data",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "symbol": { "type": "string" },
+          "interval": { "type": "string" },
+          "start": { "type": "string" },
+          "end": { "type": "string" }
+        },
+        "required": ["symbol"]
+      }
+    },
+    {
+      "name": "greeting",
+      "description": "Simple greeting tool",
+      "input_schema": {
+        "type": "object",
+        "properties": { "name": { "type": "string" } },
+        "required": ["name"]
+      }
+    }
+  ]
+}

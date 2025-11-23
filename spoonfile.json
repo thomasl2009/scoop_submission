@@ -1,0 +1,11 @@
+{
+  "runtime": "python3.10",
+  "entrypoint": "main.py",
+  "dependencies": [
+    "databento",
+    "pandas",
+    "numpy",
+    "torch",
+    "spoon-ai"
+  ]
+}
