@@ -83,6 +83,8 @@ class SimpleModel(nn.Module):
         self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_dim, hidden_dim)
         self.relu = nn.ReLU()
+        self.fc2 = nn.Linear(hidden_dim, hidden_dim)
+        self.relu = nn.ReLU()
         self.fc2 = nn.Linear(hidden_dim, output_dim)
     
     def forward(self, x):
@@ -97,7 +99,7 @@ criterion = nn.CrossEntropyLoss()
 
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-for epoch in range(25):  # 10 epochs
+for epoch in range(30):  # 10 epochs
     model.train()
     for X_batch, y_batch in train_loader:
         optimizer.zero_grad()
